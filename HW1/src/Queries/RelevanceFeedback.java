@@ -31,7 +31,7 @@ public class RelevanceFeedback {
         ArrayList<String> relevantTerms = new ArrayList<>();
         for (String relevantDocID : relevantDocIDs) {
             int ind = parsedDoc.indexOf(relevantDocID);
-            String[] arrSt = (parsedDoc.get(ind + 2).replaceAll("\\p{Punct}", "")).split("\\s+", -2);
+            String[] arrSt = (parsedDoc.get(ind + 1).replaceAll("\\p{Punct}", "")).split("\\s+", -2);
             for (String a : arrSt) {
                 if (!stopwords.contains(a.toLowerCase())) {
                     if(!relevantTerms.contains(a)){

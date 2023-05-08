@@ -10,7 +10,7 @@ public class ParserDocument {
 
         ArrayList<String> ll = new ArrayList<>();
         File file = new File(
-                "ohsumed.88-91");
+                "ohsu.med.88-91");
         Scanner sc = new Scanner(file);
 
         String st;

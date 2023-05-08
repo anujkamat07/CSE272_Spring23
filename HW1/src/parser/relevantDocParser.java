@@ -13,7 +13,7 @@ public class relevantDocParser {
 
         List<List<String>> llfinal = new ArrayList<>();
         File file = new File(
-                "qrels.ohsu.batch.87");
+                "qrels.ohsu.88-91");
         Scanner sc = new Scanner(file);
 
         String st;

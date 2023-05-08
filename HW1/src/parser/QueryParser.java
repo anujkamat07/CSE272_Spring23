@@ -15,7 +15,7 @@ public class QueryParser {
         List<String> stopwords = Files.readAllLines(Paths.get("stopwords.txt"));
 
         File file = new File(
-                "queryohsu1-63");
+                "query.ohsu.1-63");
 
         BufferedReader br
                 = new BufferedReader(new FileReader(file));

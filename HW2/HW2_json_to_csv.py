@@ -16,7 +16,7 @@ with open('Automotive.csv', 'w') as f:
         if dict["verified"] == True:
             f.write("%s,%s,%s\n"%(dict["reviewerID"],dict["asin"],dict["overall"]))
             lines += 1
-            if lines == 1000000:
-                break
+#             if lines == 1000000:
+#                 break
             
 print(f"Automotive.csv file is created and has {lines} entries")            

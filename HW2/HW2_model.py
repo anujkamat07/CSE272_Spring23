@@ -4,12 +4,14 @@ import pandas as pd
 import numpy as np
 from sklearn import model_selection, preprocessing
 from torch.utils.data import DataLoader
+from collections import defaultdict
 import torch.nn as nn
 import warnings
 warnings.filterwarnings("ignore")
 from sklearn.metrics import mean_absolute_error, mean_squared_error, precision_score, recall_score, f1_score
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 
 class AutomotiveDataset:
     def __init__(self, users, product, ratings):
@@ -89,7 +91,6 @@ test_loader = DataLoader(dataset=test_dataset,
 
 dataiter = iter(train_loader)
 dataloader_data = next(dataiter) 
-# print(dataloader_data)
 
 # Create Model
 
@@ -107,7 +108,7 @@ loss_func = nn.MSELoss()
 
 # Run the training model
 
-epochs = 5
+epochs = 1
 total_loss = 0
 step_cnt = 0
 plot_steps, print_steps = 5000, 5000
@@ -135,7 +136,6 @@ for epoch_i in range(epochs):
         total_loss += loss.item()    
 
         step_cnt = step_cnt + len(train_data["users"])
-#         print(step_cnt % plot_steps)
         
         if(step_cnt % plot_steps == 0):
             avg_loss = total_loss / (len(train_data["users"]) * plot_steps)
@@ -158,7 +158,7 @@ for epoch_i in range(epochs):
         # Adjust learning rate based on validation loss
         sch.step(validation_loss)
 
-    model.train()
+    model.train()    
 
 # Plot the average loss during training
 
@@ -172,7 +172,6 @@ plt.show()
 
 
 ###Calculating MAE####
-
 model_output_list = []
 target_rating_list = []
 
@@ -194,9 +193,11 @@ print(f"MAE: {mae}")
 #####Calculating RMSE#######
 
 rms = mean_squared_error(target_rating_list, model_output_list, squared=False)
-print(f"rms: {rms}")
+print(f"RMSE: {rms}")
 
-def recommended_items(model, n_items=10):
+# Create Ranking list with top 10 products for each user
+
+def recommended_products(model, n_items=10):
     user_ids = df_test['reviewerID'].unique()
     recommendations = {}
     
@@ -215,8 +216,12 @@ def recommended_items(model, n_items=10):
     
     return recommendations
 
-recommendations = recommended_items(model)
-# print(recommendations)    
+recommendations_list = recommended_products(model)
+#Commenting out the print statement for the recommendation list
+print(recommendations_list)    
+
+
+#Function to evaluate the ranking list
 
 def evaluate_ranking(model, data_loader):
     model.eval()
@@ -249,3 +254,43 @@ print(f'Precision: {precision:.4f}')
 print(f'Recall: {recall:.4f}')
 print(f'F-measure: {fmeasure:.4f}')
 print("Conversion Rate: {:.2f}%".format(conversion_rate))
+
+
+# Evaluating Precision@10 and Recall@10
+
+user_rating_true = defaultdict(list)
+with torch.no_grad():
+    precisions = {}
+    recalls = {}
+    k=10
+    threshold=3.5
+    for i, test_data in enumerate(test_loader): 
+        users = test_data['users']
+        product = test_data['product']
+        ratings = test_data['ratings']
+        
+        output = model(test_data['users'], test_data["product"])
+
+        for i in range(len(users)):
+            user_id = users[i].item()
+            product_id = product[i].item() 
+            pred_rating = output[i][0].item()
+            true_rating = ratings[i].item()
+            user_rating_true[user_id].append((pred_rating, true_rating))
+
+    for user_id, user_ratings in user_rating_true.items():
+        user_ratings.sort(key=lambda x: x[0], reverse=True)
+        n_rel = sum((true_r >= threshold) for (_, true_r) in user_ratings)
+        n_rec_k = sum((est >= threshold) for (est, _) in user_ratings[:k])
+
+        n_rel_and_rec_k = sum(
+            ((true_r >= threshold) and (est >= threshold))
+            for (est, true_r) in user_ratings[:k])
+        precisions[user_id] = n_rel_and_rec_k / n_rec_k if n_rec_k != 0 else 0
+        recalls[user_id] = n_rel_and_rec_k / n_rel if n_rel != 0 else 0  
+
+
+# Precision and recall can then be averaged over all users
+print(f"precision @ {k}: {sum(prec for prec in precisions.values()) / len(precisions)}")
+
+print(f"recall @ {k} : {sum(rec for rec in recalls.values()) / len(recalls)}")                  
